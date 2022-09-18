@@ -1,0 +1,5 @@
+build/
+.vscode/
+pcd(cube)/
+scripts/__pycache__/
+data/video

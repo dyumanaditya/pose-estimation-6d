@@ -1,0 +1,127 @@
+<launch>
+    <!-- Arguments for kinect ROS driver-->
+    <arg name="color_enabled"                         default="false" />   <!-- Enable or disable the color camera -->
+    <arg name="fps"                                   default="5" />     <!-- FPS to run both cameras at. Valid options are 5, 15, and 30 -->
+    <arg name="rgb_point_cloud"                       default="false" />  <!-- Colorize the point cloud using the RBG camera. Requires color_enabled and depth_enabled -->
+    <arg name="point_cloud_in_depth_frame"            default="false" />   <!-- Whether the RGB pointcloud is rendered in the depth frame (true) or RGB frame (false). Will either match the resolution of the depth camera (true) or the RGB camera (false). -->
+    <arg name="sensor_sn"                             default="" />       <!-- Sensor serial number. If none provided, the first sensor will be selected -->
+    <arg name="recording_file"                        default="" />       <!-- Absolute path to a mkv recording file which will be used with the playback api instead of opening a device -->
+
+    <!-- Arguments for Kalman filter -->
+    <arg name="init_noise"                            default="0.1" />
+    <arg name="obs_noise_var"                         default="50e+1" />
+    <arg name="dt"                                    default="0.1" />
+    <arg name="maha_dist_sq_thresh"                   default="10e-7" />
+    <arg name="use_maha"                              default="True" />
+
+    <!-- Arguments for pose estimation pkg-->
+    <!-- General args-->
+    <arg name="cad_path"                              default="" />       <!-- Absolute or relative path to the .obj file -->
+    <arg name="csv_name"                              default="poses" />  <!-- Name of the csv file that will contain all the poses -->
+    <arg name="debug"                                 default="false"/> <!-- Boolean to print more detailed debugging statements -->
+    <arg name="max_speed"                             default="1.0"/> <!--Maximum speed at which objected to be tracked moves in meters/sec-->
+    <arg name="region_specific_detection"             default="false"/> <!--Boolean to add an addition detection option which is based off of the tracking position (does not affect speed)-->
+    <arg name="point_cloud_topic"                     default="/points2"/><!-- Name of the ROS topic on which point clouds of the scene are being streamed -->
+    <arg name="pose_pub_topic"                        default="/pose_estimation/pose"/><!-- Name of the topic to which the computed poses will be published -->
+    <arg name="compute_normals_radius"                default="0.02" />   <!-- Radius used to compute normals for scene point cloud-->
+
+    <!-- Descriptor args-->
+    <arg name="descriptor_model_radius"               default="0.07" />   <!-- Radius used to compute descriptors for model -->
+    <arg name="descriptor_scene_radius"               default="0.07" />   <!-- Radius used to compute descriptors for scene -->
+
+    <!-- Segmentation args-->
+    <arg name="segmentation_region_box_size"          default="0.2" />    <!-- Length of the side of the box used in region segmentation -->
+    
+    <!-- Pass Through Filter -->
+    <arg name="segmentation_plane_filter_lim_xmin"     default="-0.24" />   <!-- Minimum limit for passthrough filter along x-axis-->
+    <arg name="segmentation_plane_filter_lim_xmax"     default="0.24" />    <!-- Maximum limit for passthrough filter along x-axis -->
+    <arg name="segmentation_plane_filter_lim_ymin"     default="-0.5" />   <!-- Minimum limit for passthrough filter along y-axis -->
+    <arg name="segmentation_plane_filter_lim_ymax"     default="0.45" />    <!-- Maximum limit for passthrough filter along y-axis -->
+    <arg name="segmentation_plane_filter_lim_zmin"     default="0" />      <!-- Minimum limit for passthrough filter along z-axis -->
+    <arg name="segmentation_plane_filter_lim_zmax"     default="1.0" />    <!-- Maximum limit for passthrough filter along z-axis -->
+
+    <arg name="segmentation_plane_distance_threshold" default="0.01" />   <!-- Distance threshold for sac segmentation -->
+    
+    <arg name="segmentation_voxel_down_leaf"          default="0.007" />  <!-- Leaf size for voxel grid -->
+    
+    <!-- Alignment args-->
+    <arg name="alignment_max_iterations"              default="500" />    <!-- Max RANSAC iterations -->
+    <arg name="alignment_num_samples"                 default="3" />      <!-- Number of points to sample for generating/prerejecting a pose -->
+    <arg name="alignment_correspondence_randomness"   default="18" />     <!-- Number of nearest features to use -->
+    <arg name="alignment_similarity_threshold"        default="0.5" />    <!-- Polygonal edge length similarity threshold -->
+    <arg name="alignment_max_correspondence_distance" default="0.18" />   <!-- Inlier threshold -->
+    <arg name="alignment_inlier_fraction"             default="0.6" />    <!-- Required inlier fraction for accepting a pose hypothesis -->
+    
+    <arg name="icp_max_iterations"                    default="3" />      <!-- Max ICP iterations -->
+    <arg name="icp_transformation_eps"                default="1e-2" />   <!-- Maximum allowable translation squared difference between two consecutive transformations in order for an optimization to be considered as having converged to the final solution -->
+    <arg name="icp_max_correspondence_distance"       default="0.02" />   <!-- Maximum distance threshold between two correspondent points in source <-> target -->
+    <arg name="icp_fitness_eps"                       default="0.0005" /> <!-- Maximum allowed distance error before the algorithm will be considered to have converged -->
+    <arg name="icp_outlier_threshold"                 default="0.05" />   <!-- Inlier distance threshold for the internal outlier rejection loop -->
+
+
+
+    <node name="pose_estimation_6d" pkg="pose_estimation_6d" type="pose_estimation_6d" output="screen" required="true">
+        <!-- General args-->
+        <param name="cad_path"                              type="string" value="$(arg cad_path)" />
+        <param name="csv_name"                              type="string" value="$(arg csv_name)" />
+        <param name="point_cloud_topic"                     type="string" value="$(arg point_cloud_topic)" />
+        <param name="pose_pub_topic"                        type="string" value="$(arg pose_pub_topic)" />
+        <param name="compute_normals_radius"                type="double" value="$(arg compute_normals_radius)" />
+        <param name="max_speed"                             type="double" value="$(arg max_speed)" />
+        <param name="debug"				    type="bool"   value="$(arg debug)" />
+	<param name="region_specific_detection"	            type="bool"   value="$(arg region_specific_detection)" />
+        <!-- Descriptor args-->
+        <param name="descriptor_model_radius"               type="double" value="$(arg descriptor_model_radius)" />
+        <param name="descriptor_scene_radius"               type="double" value="$(arg descriptor_scene_radius)" />
+        
+        <!-- Segmentation args-->
+        <param name="segmentation_region_box_size"          type="double" value="$(arg segmentation_region_box_size)" />
+        <param name="segmentation_plane_filter_lim_xmin"     type="double" value="$(arg segmentation_plane_filter_lim_xmin)" />
+        <param name="segmentation_plane_filter_lim_xmax"     type="double" value="$(arg segmentation_plane_filter_lim_xmax)" />
+        <param name="segmentation_plane_filter_lim_ymin"     type="double" value="$(arg segmentation_plane_filter_lim_ymin)" />
+        <param name="segmentation_plane_filter_lim_ymax"     type="double" value="$(arg segmentation_plane_filter_lim_ymax)" />
+        <param name="segmentation_plane_filter_lim_zmin"     type="double" value="$(arg segmentation_plane_filter_lim_zmin)" />
+        <param name="segmentation_plane_filter_lim_zmax"     type="double" value="$(arg segmentation_plane_filter_lim_zmax)" />
+
+        <param name="segmentation_plane_distance_threshold" type="double" value="$(arg segmentation_plane_distance_threshold)" />
+        <param name="segmentation_voxel_down_leaf"          type="double" value="$(arg segmentation_voxel_down_leaf)" />
+        
+        <!-- Alignment args-->
+        <param name="alignment_max_iterations"              type="int"    value="$(arg alignment_max_iterations)" />
+        <param name="alignment_num_samples"                 type="int"    value="$(arg alignment_num_samples)" />
+        <param name="alignment_correspondence_randomness"   type="double" value="$(arg alignment_correspondence_randomness)" />
+        <param name="alignment_similarity_threshold"        type="double" value="$(arg alignment_similarity_threshold)" />
+        <param name="alignment_max_correspondence_distance" type="double" value="$(arg alignment_max_correspondence_distance)" />
+        <param name="alignment_inlier_fraction"             type="double" value="$(arg alignment_inlier_fraction)" />
+        <param name="icp_max_iterations"                    type="int"    value="$(arg icp_max_iterations)" />
+        <param name="icp_transformation_eps"                type="double" value="$(arg icp_transformation_eps)" />
+        <param name="icp_max_correspondence_distance"       type="double" value="$(arg icp_max_correspondence_distance)" />
+        <param name="icp_fitness_eps"                       type="double" value="$(arg icp_fitness_eps)" />
+        <param name="icp_outlier_threshold"                 type="double" value="$(arg icp_outlier_threshold)" />
+    </node>
+
+
+    <!-- Launch Kalman Filter -->
+    <include file="$(find pose_estimation_6d)/launch/kalman_filter.launch">
+        <arg name="init_noise"                 value="$(arg init_noise)" />
+        <arg name="obs_noise_var"              value="$(arg obs_noise_var)" />
+        <arg name="dt"                         value="$(arg dt)" />
+        <arg name="maha_dist_sq_thresh"        value="$(arg maha_dist_sq_thresh)" />
+        <arg name="use_maha"                   value="$(arg use_maha)" />
+    </include>
+
+
+    <!-- Azure Kinect ROS driver-->
+    <include file="$(find azure_kinect_ros_driver)/launch/driver.launch" >
+        <arg name="color_enabled"              value="$(arg color_enabled)" />
+        <arg name="fps"                        value="$(arg fps)" />
+        <arg name="rgb_point_cloud"            value="$(arg rgb_point_cloud)" />
+        <arg name="point_cloud_in_depth_frame" value="$(arg point_cloud_in_depth_frame)" />
+        <arg name="sensor_sn"                  value="$(arg sensor_sn)" />
+        <arg name="recording_file"             value="$(arg recording_file)" />
+    </include>
+
+    <!-- Launch Rviz Config File -->
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find pose_estimation_6d)/rviz/pose_estimation_6d.rviz" />
+
+</launch>

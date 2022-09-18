@@ -1,0 +1,16 @@
+<launch>
+    <arg name="init_noise"              default="0.1" />
+    <arg name="obs_noise_var"           default="50e+1" />
+    <arg name="dt"                      default="0.1" />
+    <arg name="maha_dist_sq_thresh"     default="10e-7" />
+    <arg name="use_maha"                default="True" />
+
+
+    <node name="constant_velocity_kalman_filter" pkg="pose_estimation_6d" type="ros_kalman_filter.py" output="screen" required="true">
+        <param name="init_noise"            type="double" value="$(arg init_noise)" />
+        <param name="obs_noise_var"         type="double" value="$(arg obs_noise_var)" />
+        <param name="dt"                    type="double" value="$(arg dt)" />
+        <param name="maha_dist_sq_thresh"   type="double" value="$(arg maha_dist_sq_thresh)" />
+        <param name="use_maha"              type="bool"   value="$(arg use_maha)" />
+    </node>
+</launch>
